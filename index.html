@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="description" content="कलम को घर — नेपाली साहित्यको सुन्दर संसार। A home for Nepali poetry, stories and literature.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none';">
 <title>कलम को घर — Kalam Ko Ghar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+Devanagari:wght@300;400;600;700&display=swap" rel="stylesheet">
@@ -566,16 +567,66 @@ async function checkConnection() {
     if (error) throw error;
     USE_SUPABASE = true;
     console.info('[KKG] ✓ Supabase connected');
+    hideBanner();
     return true;
   } catch (e) {
     USE_SUPABASE = false;
     console.warn('[KKG] Supabase unreachable — using seed data. Error:', e.message);
-    // Show setup hint if it's an auth error
-    if (e.message && (e.message.includes('relation') || e.message.includes('does not exist'))) {
-      console.warn('[KKG] Table not found — run the SQL schema from the comments above in your Supabase SQL editor.');
+
+    const isRLS   = e.message && e.message.includes('permission denied');
+    const isNoTbl = e.message && (e.message.includes('relation') || e.message.includes('does not exist'));
+    const is401   = e.message && (e.message.includes('401') || e.message.includes('Unauthorized') || e.message.includes('JWT'));
+
+    if (isRLS || is401) {
+      showSetupBanner('rls');
+    } else if (isNoTbl) {
+      showSetupBanner('table');
+    } else {
+      showSetupBanner('generic', e.message);
     }
     return false;
   }
+}
+
+function showSetupBanner(type, extra) {
+  if (document.getElementById('setup-banner')) return;
+  const sqlRLS = `-- Run this in your Supabase SQL Editor:\n-- https://supabase.com/dashboard/project/wyadahdemrvibtlxhdxw/sql\n\nALTER TABLE posts    ENABLE ROW LEVEL SECURITY;\nALTER TABLE comments ENABLE ROW LEVEL SECURITY;\n\nDROP POLICY IF EXISTS "read_posts"    ON posts;\nDROP POLICY IF EXISTS "insert_posts"  ON posts;\nDROP POLICY IF EXISTS "update_posts"  ON posts;\nDROP POLICY IF EXISTS "read_comments"   ON comments;\nDROP POLICY IF EXISTS "insert_comments" ON comments;\n\nCREATE POLICY "read_posts"    ON posts    FOR SELECT USING (true);\nCREATE POLICY "insert_posts"  ON posts    FOR INSERT WITH CHECK (true);\nCREATE POLICY "update_posts"  ON posts    FOR UPDATE USING (true) WITH CHECK (true);\nCREATE POLICY "read_comments"   ON comments FOR SELECT USING (true);\nCREATE POLICY "insert_comments" ON comments FOR INSERT WITH CHECK (true);`;
+
+  const sqlTable = `-- Run this FIRST in your Supabase SQL Editor:\nCREATE TABLE IF NOT EXISTS posts (\n  id            BIGSERIAL PRIMARY KEY,\n  type          TEXT NOT NULL DEFAULT 'कविता',\n  title         TEXT NOT NULL,\n  author        TEXT NOT NULL,\n  content       TEXT NOT NULL,\n  tags          TEXT[]   DEFAULT '{}',\n  reactions     JSONB    DEFAULT '{\"love\":0,\"wah\":0,\"sad\":0}',\n  reaction_total INTEGER  DEFAULT 0,\n  mt            TEXT,\n  md            TEXT,\n  created_at    TIMESTAMPTZ DEFAULT NOW()\n);\n\nCREATE TABLE IF NOT EXISTS comments (\n  id            BIGSERIAL PRIMARY KEY,\n  post_id       BIGINT REFERENCES posts(id) ON DELETE CASCADE,\n  author_name   TEXT NOT NULL,\n  comment_text  TEXT NOT NULL,\n  created_at    TIMESTAMPTZ DEFAULT NOW()\n);\n\nALTER TABLE posts    ENABLE ROW LEVEL SECURITY;\nALTER TABLE comments ENABLE ROW LEVEL SECURITY;\n\nCREATE POLICY "read_posts"    ON posts    FOR SELECT USING (true);\nCREATE POLICY "insert_posts"  ON posts    FOR INSERT WITH CHECK (true);\nCREATE POLICY "update_posts"  ON posts    FOR UPDATE USING (true) WITH CHECK (true);\nCREATE POLICY "read_comments"   ON comments FOR SELECT USING (true);\nCREATE POLICY "insert_comments" ON comments FOR INSERT WITH CHECK (true);`;
+
+  const msg = type === 'rls'
+    ? '⚠️ Supabase RLS policies are missing — posts cannot be read or saved. Run the SQL below in your Supabase SQL Editor, then reload.'
+    : type === 'table'
+    ? '⚠️ Supabase tables not found. Run the SQL below to create them, then reload.'
+    : `⚠️ Supabase connection failed (${extra||'unknown error'}). Check your credentials or run the SQL below.`;
+
+  const sql = (type === 'table') ? sqlTable : sqlRLS;
+
+  const banner = document.createElement('div');
+  banner.id = 'setup-banner';
+  banner.style.cssText = `position:fixed;bottom:0;left:0;right:0;z-index:9998;background:#1a0606;border-top:2px solid #cc3333;padding:14px 20px 16px;font-family:monospace;font-size:13px;color:#eddfd0;max-height:55vh;overflow-y:auto;box-shadow:0 -8px 32px rgba(0,0,0,.7)`;
+  banner.innerHTML = `
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">
+      <div style="color:#e04444;font-weight:bold;font-size:14px;flex:1">${msg}</div>
+      <div style="display:flex;gap:8px;flex-shrink:0">
+        <a href="https://supabase.com/dashboard/project/wyadahdemrvibtlxhdxw/sql" target="_blank" rel="noopener"
+          style="background:#7a1010;color:#eddfd0;border:1px solid #cc3333;padding:6px 14px;border-radius:2px;text-decoration:none;font-size:12px;white-space:nowrap">
+          Open SQL Editor ↗
+        </a>
+        <button onclick="document.getElementById('setup-banner').remove()" style="background:transparent;border:1px solid #4e0a0a;color:#8a6050;padding:6px 10px;border-radius:2px;cursor:pointer;font-size:12px">Dismiss</button>
+      </div>
+    </div>
+    <pre id="setup-sql" style="background:#0a0202;border:1px solid #4e0a0a;padding:12px;border-radius:2px;overflow-x:auto;white-space:pre-wrap;color:#c2a07a;font-size:12px;line-height:1.6;margin-bottom:8px">${sql}</pre>
+    <button onclick="navigator.clipboard.writeText(document.getElementById('setup-sql').textContent).then(()=>toast('SQL copied!','success'))"
+      style="background:#4e0a0a;border:1px solid #7a1010;color:#eddfd0;padding:6px 14px;border-radius:2px;cursor:pointer;font-size:12px">
+      📋 Copy SQL
+    </button>`;
+  document.body.appendChild(banner);
+}
+
+function hideBanner() {
+  const b = document.getElementById('setup-banner');
+  if (b) b.remove();
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -1244,7 +1295,10 @@ async function submitPost() {
       const { error } = await db.from('posts').insert(newPost);
       if (error) throw error;
     } else {
+      // Supabase not connected — save locally and warn user
       SEED.unshift({ ...newPost, id:'local-'+Date.now(), reactions:{love:0,wah:0,sad:0}, reaction_total:0, comments:[], created_at:new Date().toISOString() });
+      toast('⚠️ Supabase RLS not set up — post saved locally only (will be lost on reload). See the red banner below.', 'error');
+      showSetupBanner('rls');
     }
 
     // Reset form
