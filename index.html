@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="कलम को घर — नेपाली साहित्यको सुन्दर संसार। A home for Nepali poetry, stories and literature.">
+<title>कलम को घर — Kalam Ko Ghar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Noto+Serif+Devanagari:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════════
+     SUPABASE CDN — Replace the URL & KEY with your own values
+     from: https://supabase.com/dashboard → Project Settings → API
+     ═══════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   RESET & DESIGN TOKENS
+   All color/typography values preserved from the original exactly.
+══════════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  /* Core palette — dark void + crimson */
+  --void:   #050101;
+  --deep:   #0a0202;
+  --surf:   #120404;
+  --card:   #1a0606;
+  --card-h: #220909;
+  --cr-dk:  #4e0a0a;
+  --cr:     #7a1010;
+  --cr-mid: #a82020;
+  --cr-brt: #cc3333;
+  --cr-glo: #e04444;
+  --gold:   #c4993a;
+  --gold-d: #8a6922;
+  --cream:  #eddfd0;
+  --cream-d:#c2a07a;
+  --muted:  #8a6050;
+  --green:  #2a6b3c;
+  --bdr:    rgba(122,16,16,.28);
+  --bdr-hi: rgba(180,60,60,.5);
+  /* Typography stacks */
+  --fd:'Playfair Display',serif;
+  --fb:'Crimson Pro','Noto Serif Devanagari',serif;
+  --fdev:'Noto Serif Devanagari','Crimson Pro',serif;
+  /* Easing curves */
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-out:cubic-bezier(0,0,.2,1);
+  /* Feed layout */
+  --feed-max:980px;
+  --nav-h:64px;
+}
+
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+
+body{
+  background:var(--void);
+  color:var(--cream);
+  font-family:var(--fb);
+  font-size:18px;
+  line-height:1.75;
+  overflow-x:hidden;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* Paper grain overlay — preserved from original */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  pointer-events:none;z-index:9999;opacity:.12;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='.9'/%3E%3C/svg%3E");
+}
+
+/* ══════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════ */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--void)}
+::-webkit-scrollbar-thumb{background:var(--cr-dk);border-radius:4px}
+
+/* ══════════════════════════════════════
+   NAV — Feed-first: Write button top-right
+══════════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  height:var(--nav-h);
+  padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(5,1,1,.96);
+  border-bottom:1px solid var(--bdr);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+}
+
+/* Logo */
+.logo{cursor:pointer;transition:opacity .3s;text-decoration:none;display:flex;flex-direction:column}
+.logo:hover{opacity:.75}
+.logo-ne{font-family:var(--fdev);font-size:20px;font-weight:700;color:var(--cream);letter-spacing:.02em;line-height:1.1}
+.logo-en{font-family:var(--fd);font-size:9px;font-weight:400;color:var(--muted);letter-spacing:.22em;text-transform:uppercase}
+
+/* Center sort tabs */
+.nav-sort{display:flex;gap:2px;align-items:center}
+.nav-sort-btn{
+  padding:6px 16px;background:transparent;border:none;
+  color:var(--muted);font-family:var(--fdev);font-size:13px;
+  cursor:pointer;border-radius:2px;transition:all .25s var(--ease);
+  letter-spacing:.04em;position:relative;
+}
+.nav-sort-btn::after{
+  content:'';position:absolute;bottom:-1px;left:50%;right:50%;
+  height:2px;background:var(--cr-glo);
+  transition:left .3s var(--ease),right .3s var(--ease);
+}
+.nav-sort-btn.on{color:var(--cream)}
+.nav-sort-btn.on::after{left:12%;right:12%}
+.nav-sort-btn:hover{color:var(--cream-d)}
+
+/* Right side: Write + optional auth */
+.nav-right{display:flex;align-items:center;gap:12px}
+
+/* PRIMARY CTA — Write Post button */
+.btn-write{
+  display:flex;align-items:center;gap:7px;
+  padding:9px 18px;
+  background:var(--cr-dk);border:1px solid var(--cr);
+  color:var(--cream);font-family:var(--fdev);font-size:14px;
+  font-weight:600;cursor:pointer;border-radius:2px;
+  letter-spacing:.04em;transition:all .3s var(--ease);
+  white-space:nowrap;
+}
+.btn-write:hover{background:var(--cr);box-shadow:0 6px 28px rgba(50,5,5,.7);transform:translateY(-1px)}
+.btn-write:active{transform:translateY(0)}
+.btn-write-icon{font-size:15px;line-height:1}
+
+/* Mobile hamburger */
+.nav-hamburger{
+  display:none;background:none;border:none;color:var(--cream-d);
+  font-size:22px;cursor:pointer;padding:4px;
+}
+
+/* ══════════════════════════════════════
+   AMBIENT BACKGROUND (Feed context)
+   The hero glow + floating Devanagari chars
+   are now ambient elements behind the feed,
+   not a blocking landing screen.
+══════════════════════════════════════ */
+.ambient-bg{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  overflow:hidden;
+}
+.ambient-glow{
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:900px;height:500px;
+  background:radial-gradient(ellipse,rgba(78,10,10,.24) 0%,transparent 65%);
+  animation:pulseGlow 6s ease-in-out infinite alternate;
+}
+@keyframes pulseGlow{
+  0%{opacity:.6;transform:translateX(-50%) scale(1)}
+  100%{opacity:1;transform:translateX(-50%) scale(1.05)}
+}
+/* Floating Devanagari characters — ambient, subtle */
+.fc{
+  position:absolute;font-family:var(--fdev);
+  color:rgba(122,16,16,.065);
+  animation:floatC var(--dur,6s) ease-in-out infinite alternate;
+  animation-delay:var(--del,0s);user-select:none;pointer-events:none;
+}
+@keyframes floatC{
+  0%{transform:translateY(0) rotate(var(--r0,-8deg));opacity:.03}
+  100%{transform:translateY(-28px) rotate(var(--r1,8deg));opacity:.13}
+}
+
+/* ══════════════════════════════════════
+   FEED LAYOUT — Main page view
+══════════════════════════════════════ */
+#feed-page{
+  position:relative;z-index:1;
+  padding-top:calc(var(--nav-h) + 28px);
+  min-height:100vh;
+}
+
+.feed-layout{
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 24px 80px;
+  display:grid;
+  grid-template-columns:220px 1fr 240px;
+  gap:28px;
+  align-items:start;
+}
+
+/* ── LEFT SIDEBAR — Category Filter ── */
+.sidebar-left{
+  position:sticky;top:calc(var(--nav-h) + 28px);
+}
+.sidebar-section{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:3px;padding:18px;margin-bottom:16px;
+}
+.sidebar-label{
+  font-family:var(--fd);font-size:9px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--bdr);
+}
+.cat-filter-list{display:flex;flex-direction:column;gap:3px}
+.cat-filter-btn{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:8px 10px;background:transparent;border:none;
+  color:var(--cream-d);font-family:var(--fdev);font-size:14px;
+  cursor:pointer;border-radius:2px;text-align:left;
+  transition:all .22s var(--ease);
+}
+.cat-filter-btn:hover{background:var(--surf);color:var(--cream)}
+.cat-filter-btn.on{background:var(--cr-dk);color:var(--cream);border-left:2px solid var(--cr-glo);padding-left:8px}
+.cat-count{
+  font-family:var(--fd);font-size:10px;color:var(--muted);
+  background:var(--surf);padding:2px 6px;border-radius:9px;
+  transition:background .22s;
+}
+.cat-filter-btn.on .cat-count{background:rgba(122,16,16,.5);color:var(--cream-d)}
+
+/* Tag cloud */
+.tag-cloud{display:flex;flex-wrap:wrap;gap:5px}
+.tag-chip{
+  font-family:var(--fdev);font-size:12px;color:var(--muted);
+  border:1px solid var(--bdr);padding:3px 8px;border-radius:2px;
+  cursor:pointer;transition:all .22s var(--ease);
+  background:transparent;
+}
+.tag-chip:hover{color:var(--cream-d);border-color:var(--cr-mid);background:rgba(122,16,16,.08)}
+.tag-chip.on{background:var(--cr-dk);color:var(--cream);border-color:var(--cr-mid)}
+
+/* ── CENTER FEED ── */
+.feed-center{min-width:0}
+
+/* Feed header: search + active filter indicator */
+.feed-header{margin-bottom:20px}
+.search-wrap{position:relative;margin-bottom:0}
+.search-wrap input{
+  width:100%;background:var(--surf);border:1px solid var(--bdr);
+  padding:12px 20px 12px 48px;font-family:var(--fdev);
+  font-size:15px;color:var(--cream);border-radius:2px;outline:none;
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease);
+}
+.search-wrap input:focus{border-color:var(--cr-mid);box-shadow:0 0 0 3px rgba(122,16,16,.16)}
+.search-icon{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:16px;pointer-events:none;
+}
+.search-clear{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:16px;padding:2px;transition:color .2s;display:none;
+}
+.search-clear:hover{color:var(--cream)}
+
+/* Active filter pill */
+.active-filter-bar{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 0;font-family:var(--fdev);font-size:13px;
+  color:var(--muted);min-height:36px;
+}
+.active-filter-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--cr-dk);color:var(--cream-d);
+  padding:4px 10px;border-radius:2px;font-size:12px;
+  border:1px solid var(--cr-mid);
+}
+.active-filter-clear{
+  background:none;border:none;color:var(--cream-d);
+  cursor:pointer;font-size:13px;padding:0 2px;
+  transition:color .2s;
+}
+.active-filter-clear:hover{color:var(--cr-glo)}
+
+/* Feed loading spinner */
+.feed-loading{
+  text-align:center;padding:60px 20px;
+  font-family:var(--fd);font-size:13px;letter-spacing:.1em;
+  color:var(--muted);text-transform:uppercase;
+}
+.spinner{
+  width:28px;height:28px;border:2px solid var(--bdr);
+  border-top-color:var(--cr-mid);border-radius:50%;
+  animation:spin .8s linear infinite;
+  margin:0 auto 18px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Feed list — vertical cards like Reddit */
+.feed-list{display:flex;flex-direction:column;gap:14px}
+
+/* ── POST CARD (Feed item) ── */
+.pc{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:3px;padding:22px 24px 18px;
+  cursor:pointer;transition:all .32s var(--ease);
+  position:relative;overflow:hidden;
+}
+.pc::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;
+  width:2px;
+  background:linear-gradient(180deg,var(--cr-dk),var(--cr-mid),var(--cr-dk));
+  transform:scaleY(0);transition:transform .35s var(--ease);transform-origin:top;
+}
+.pc:hover{border-color:var(--bdr-hi);background:var(--card-h);transform:translateX(2px)}
+.pc:hover::before{transform:scaleY(1)}
+
+.pc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.pc-badge{
+  display:inline-block;font-family:var(--fd);
+  font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--cr-brt);border:1px solid var(--cr-dk);
+  padding:3px 9px;border-radius:1px;flex-shrink:0;
+}
+.pc-date-meta{font-family:var(--fd);font-size:11px;color:var(--muted);font-style:italic;flex-shrink:0}
+.pc-title{
+  font-family:var(--fdev);font-size:20px;font-weight:700;
+  color:var(--cream);line-height:1.28;margin-bottom:4px;
+}
+.pc-author{
+  font-family:var(--fd);font-size:12px;font-style:italic;
+  color:var(--gold-d);margin-bottom:10px;
+}
+.pc-preview{
+  font-size:15px;color:var(--muted);line-height:1.7;
+  display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden;margin-bottom:14px;
+}
+/* Poem previews in italic */
+.pc-preview.verse{font-style:italic;line-height:1.85}
+
+/* Media thumbnail indicator */
+.pc-media-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;color:var(--muted);
+  border:1px solid var(--bdr);padding:2px 8px;border-radius:1px;
+  margin-bottom:12px;
+}
+
+/* Tags row inside card */
+.pc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.pc-tag{
+  font-family:var(--fdev);font-size:11px;color:var(--muted);
+  border:1px solid var(--bdr);padding:2px 7px;border-radius:1px;
+  transition:all .2s var(--ease);cursor:pointer;
+  background:transparent;
+}
+.pc-tag:hover{color:var(--cream-d);border-color:var(--cr-mid);background:rgba(122,16,16,.1)}
+.pc-tag.on{background:var(--cr-dk);color:var(--cream-d);border-color:var(--cr-mid)}
+
+/* Card footer: reactions + comment count */
+.pc-foot{
+  display:flex;align-items:center;gap:10px;
+  border-top:1px solid var(--bdr);padding-top:12px;
+  flex-wrap:wrap;
+}
+.pc-rxn-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;color:var(--muted);padding:4px 10px;
+  border:1px solid var(--bdr);border-radius:2px;background:transparent;
+  cursor:pointer;transition:all .22s var(--ease);font-family:var(--fdev);
+}
+.pc-rxn-chip:hover{border-color:var(--cr-mid);color:var(--cream-d);background:rgba(122,16,16,.08)}
+.pc-rxn-chip.my-rxn{background:rgba(78,10,10,.5);border-color:var(--cr-brt);color:var(--cream)}
+.pc-rxn-chip .rxn-emoji{font-size:13px;line-height:1}
+.pc-read-more{
+  margin-left:auto;font-family:var(--fd);font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--cr-mid);
+  cursor:pointer;transition:color .2s;
+}
+.pc-read-more:hover{color:var(--cr-glo)}
+
+/* ── INFINITE SCROLL sentinel ── */
+.scroll-sentinel{
+  height:80px;display:flex;align-items:center;
+  justify-content:center;
+}
+.scroll-sentinel-inner{
+  font-family:var(--fd);font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);opacity:0;
+  transition:opacity .3s;
+}
+.scroll-sentinel.loading .scroll-sentinel-inner{opacity:1}
+.sentinel-spinner{
+  display:inline-block;width:18px;height:18px;
+  border:1.5px solid var(--bdr);border-top-color:var(--cr-mid);
+  border-radius:50%;animation:spin .7s linear infinite;
+  margin-right:8px;vertical-align:middle;
+}
+
+/* End of feed message */
+.feed-end{
+  text-align:center;padding:32px 20px;
+  font-family:var(--fd);font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);opacity:.6;
+}
+
+/* Empty state */
+.empty{text-align:center;padding:80px 20px}
+.empty-icon{font-size:48px;margin-bottom:14px;opacity:.5}
+.empty-title{font-family:var(--fdev);font-size:20px;color:var(--cream-d);margin-bottom:6px}
+.empty-sub{font-size:14px;color:var(--muted);font-style:italic}
+
+/* ── RIGHT SIDEBAR — Stats ── */
+.sidebar-right{
+  position:sticky;top:calc(var(--nav-h) + 28px);
+}
+.stat-card{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:3px;padding:18px;margin-bottom:16px;
+}
+.stat-card-title{
+  font-family:var(--fd);font-size:9px;letter-spacing:.26em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--bdr);
+}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.stat-item{text-align:center}
+.stat-n{
+  font-family:var(--fd);font-size:22px;font-weight:600;
+  color:var(--cr-brt);transition:color .3s;display:block;
+}
+.stat-l{font-family:var(--fdev);font-size:11px;color:var(--muted);margin-top:1px;display:block}
+
+/* Trending tags */
+.trending-tag{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:6px 0;border-bottom:1px solid var(--bdr);cursor:pointer;
+  transition:color .2s;
+}
+.trending-tag:last-child{border-bottom:none}
+.trending-tag:hover .t-name{color:var(--cr-glo)}
+.t-name{font-family:var(--fdev);font-size:13px;color:var(--cream-d);transition:color .2s}
+.t-count{font-family:var(--fd);font-size:11px;color:var(--muted)}
+
+/* Brand quote in sidebar */
+.brand-card{
+  background:linear-gradient(135deg,var(--card) 0%,var(--deep) 100%);
+  border:1px solid var(--bdr);border-radius:3px;padding:20px;
+}
+.brand-ne{font-family:var(--fdev);font-size:15px;color:var(--cream-d);font-style:italic;line-height:1.65;margin-bottom:8px}
+.brand-en{font-family:var(--fd);font-size:11px;color:var(--muted);font-style:italic;line-height:1.5}
+.brand-divider{width:28px;height:1px;background:var(--cr-mid);margin:10px 0}
+
+/* ══════════════════════════════════════
+   FULL-SCREEN OVERLAYS
+══════════════════════════════════════ */
+.overlay{
+  position:fixed;inset:0;z-index:700;
+  background:rgba(3,0,0,.97);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  overflow-y:auto;overflow-x:hidden;
+  opacity:0;pointer-events:none;
+  transition:opacity .35s var(--ease);
+}
+.overlay.open{opacity:1;pointer-events:all}
+
+.overlay::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%,rgba(78,10,10,.15) 0%,transparent 60%);
+}
+
+.ov-inner{
+  max-width:820px;margin:0 auto;padding:76px 48px 80px;
+  transform:translateY(20px);transition:transform .38s var(--ease-out);
+}
+.overlay.open .ov-inner{transform:translateY(0)}
+
+/* Close button */
+.ov-close{
+  position:fixed;top:18px;right:22px;z-index:800;
+  background:var(--card);border:1px solid var(--bdr-hi);
+  color:var(--cream-d);width:42px;height:42px;
+  cursor:pointer;font-size:19px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:3px;transition:all .3s var(--ease);
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+.ov-close:hover{background:var(--cr-dk);border-color:var(--cr-mid);color:var(--cream);transform:scale(1.06)}
+
+/* Section headers */
+.sh-eyebrow{
+  font-family:var(--fd);font-size:10px;letter-spacing:.32em;
+  text-transform:uppercase;color:var(--cr-mid);margin-bottom:8px;
+}
+.sh-title{
+  font-family:var(--fdev);font-size:clamp(28px,4.5vw,42px);
+  font-weight:700;color:var(--cream);margin-bottom:6px;line-height:1.15;
+}
+.sh-sub{font-size:15px;font-style:italic;color:var(--muted);margin-bottom:36px}
+
+/* ══════════════════════════════════════
+   FORM ELEMENTS
+══════════════════════════════════════ */
+.fg{margin-bottom:22px}
+label{
+  display:block;font-family:var(--fd);
+  font-size:10px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--cr-brt);margin-bottom:8px;
+}
+input[type=text],textarea{
+  width:100%;background:var(--surf);border:1px solid var(--bdr);
+  border-radius:2px;color:var(--cream);font-family:var(--fdev);
+  font-size:16px;padding:12px 16px;outline:none;
+  transition:border-color .3s var(--ease),box-shadow .3s var(--ease);
+  -webkit-appearance:none;
+}
+input[type=text]:focus,textarea:focus{
+  border-color:var(--cr-mid);
+  box-shadow:0 0 0 3px rgba(122,16,16,.18);
+}
+textarea{min-height:220px;resize:vertical;line-height:1.85}
+::placeholder{color:var(--muted);opacity:.5}
+
+/* Validation */
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%,60%{transform:translateX(-5px)}
+  40%,80%{transform:translateX(5px)}
+}
+.field-error{border-color:var(--cr-glo)!important;animation:shake .38s var(--ease)}
+.field-error-msg{font-size:12px;color:var(--cr-glo);margin-top:4px;font-family:var(--fd);letter-spacing:.04em}
+
+/* Word counter */
+.counter-row{display:flex;justify-content:flex-end;margin-top:6px}
+.wc-text{font-family:var(--fd);font-size:11px;color:var(--muted);letter-spacing:.05em}
+.wc-text span{color:var(--cream-d);font-weight:600}
+
+/* Category pills */
+.cats{display:flex;flex-wrap:wrap;gap:8px}
+.cat{
+  padding:7px 16px;border:1px solid var(--bdr);
+  background:transparent;color:var(--cream-d);
+  font-family:var(--fdev);font-size:14px;
+  cursor:pointer;border-radius:2px;transition:all .25s var(--ease);
+}
+.cat:hover{border-color:var(--cr-mid);color:var(--cream);background:rgba(122,16,16,.08)}
+.cat.on{background:var(--cr-dk);border-color:var(--cr-mid);color:var(--cream)}
+
+/* Tags input with pills */
+.tags-input-wrap{position:relative}
+.tags-preview{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-family:var(--fdev);font-size:12px;
+  background:var(--cr-dk);color:var(--cream-d);
+  border:1px solid var(--cr-mid);padding:3px 8px;border-radius:2px;
+}
+.tag-pill-rm{
+  background:none;border:none;color:var(--cream-d);
+  cursor:pointer;font-size:12px;padding:0;line-height:1;
+  transition:color .2s;
+}
+.tag-pill-rm:hover{color:var(--cr-glo)}
+
+/* Media upload zone */
+.media-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.mup{
+  position:relative;display:flex;flex-direction:column;
+  align-items:center;gap:7px;padding:18px 10px;
+  border:1px dashed rgba(122,16,16,.38);background:var(--surf);
+  border-radius:3px;cursor:pointer;transition:all .28s var(--ease);overflow:hidden;
+}
+.mup:hover{border-color:var(--cr-mid);background:var(--card)}
+.mup input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.mup-icon{font-size:26px;pointer-events:none}
+.mup-lne{font-family:var(--fdev);font-size:13px;color:var(--cream-d);pointer-events:none}
+.mup-hint{font-size:11px;color:var(--muted);pointer-events:none;text-align:center}
+.mup.has-file{border-color:var(--cr-mid);border-style:solid;background:rgba(78,10,10,.15)}
+.mup.has-file .mup-lne{color:var(--cr-brt)}
+
+/* Upload progress bar */
+.upload-progress{
+  height:2px;background:var(--surf);border-radius:1px;
+  margin-top:8px;overflow:hidden;display:none;
+}
+.upload-progress-bar{
+  height:100%;background:var(--cr-mid);width:0%;
+  transition:width .3s var(--ease);border-radius:1px;
+}
+
+/* Media previews */
+.media-prevs{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.mpv{
+  width:72px;height:72px;border:1px solid var(--bdr);
+  border-radius:3px;overflow:hidden;position:relative;
+}
+.mpv:hover{border-color:var(--cr-mid)}
+.mpv img{width:100%;height:100%;object-fit:cover}
+.mpv-info{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;height:100%;gap:3px;
+  font-size:10px;color:var(--cream-d);text-align:center;padding:4px;
+}
+.mpv-rm{
+  position:absolute;top:2px;right:2px;
+  background:rgba(78,10,10,.9);border:none;color:var(--cream);
+  width:18px;height:18px;border-radius:50%;
+  font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .2s;
+}
+.mpv:hover .mpv-rm{opacity:1}
+
+/* Submit button */
+.submit-btn{
+  width:100%;padding:16px 28px;
+  background:var(--cr-dk);border:1px solid var(--cr);
+  color:var(--cream);font-family:var(--fdev);font-size:16px;
+  font-weight:600;cursor:pointer;border-radius:2px;
+  letter-spacing:.05em;transition:all .32s var(--ease);
+  overflow:hidden;position:relative;
+}
+.submit-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+  transform:translateX(-110%);transition:transform .5s var(--ease);
+}
+.submit-btn:hover{background:var(--cr);box-shadow:0 10px 48px rgba(50,5,5,.65)}
+.submit-btn:hover::after{transform:translateX(110%)}
+.submit-btn:active{transform:scale(.987)}
+.submit-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Upload status message */
+.upload-status{
+  font-family:var(--fd);font-size:11px;letter-spacing:.08em;
+  color:var(--muted);text-align:center;margin-top:10px;min-height:18px;
+}
+.upload-status.ok{color:var(--green)}
+.upload-status.err{color:var(--cr-glo)}
+
+/* ══════════════════════════════════════
+   REACTION BAR
+══════════════════════════════════════ */
+.reaction-section{margin-top:22px;border-top:1px solid var(--bdr);padding-top:18px}
+.reaction-label{
+  font-family:var(--fd);font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:11px;
+}
+.reaction-bar{display:flex;gap:9px;flex-wrap:wrap}
+.rxn-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:8px 16px;
+  background:var(--card);border:1px solid var(--bdr);
+  color:var(--cream-d);font-family:var(--fdev);font-size:14px;
+  cursor:pointer;border-radius:2px;
+  transition:all .28s var(--ease);position:relative;overflow:hidden;
+}
+.rxn-btn:hover{border-color:var(--cr-mid);color:var(--cream);background:var(--card-h)}
+.rxn-btn.active-love{background:rgba(78,10,10,.55);border-color:var(--cr-brt);color:var(--cream)}
+.rxn-btn.active-wah{background:rgba(50,60,10,.4);border-color:#8a9a20;color:#c4d040}
+.rxn-btn.active-sad{background:rgba(10,20,60,.4);border-color:#3050a8;color:#8099e0}
+.rxn-btn.processing{opacity:.6;cursor:wait}
+.rxn-count{font-size:13px;opacity:.85;min-width:14px;display:inline-block;text-align:center}
+.rxn-emoji{font-size:16px;line-height:1}
+.rxn-mine-dot{
+  position:absolute;top:4px;right:4px;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--cr-glo);
+}
+
+/* ══════════════════════════════════════
+   COMMENTS SECTION
+══════════════════════════════════════ */
+.comments-section{margin-top:24px;border-top:1px solid var(--bdr);padding-top:20px}
+.comments-label{
+  font-family:var(--fd);font-size:10px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:16px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.comments-count{
+  background:var(--cr-dk);color:var(--cream);
+  font-size:10px;padding:2px 8px;border-radius:9px;
+}
+.comment-list{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.comment-item{
+  background:var(--card);border:1px solid var(--bdr);
+  border-radius:2px;padding:13px 16px;
+  animation:commentIn .32s var(--ease-out) both;
+}
+@keyframes commentIn{
+  from{opacity:0;transform:translateY(7px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.comment-item:hover{border-color:rgba(122,16,16,.35)}
+.comment-meta{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;
+}
+.comment-author{font-family:var(--fdev);font-size:13px;font-weight:600;color:var(--cream-d)}
+.comment-time{font-family:var(--fd);font-size:10px;color:var(--muted);font-style:italic}
+.comment-text{font-family:var(--fdev);font-size:14px;color:var(--muted);line-height:1.6}
+.no-comments{
+  font-family:var(--fdev);font-size:14px;
+  color:var(--muted);font-style:italic;text-align:center;padding:16px 0;opacity:.6;
+}
+
+.comment-form{display:flex;flex-direction:column;gap:9px}
+.comment-inputs{display:grid;grid-template-columns:1fr 2fr;gap:9px}
+.comment-inp{
+  width:100%;background:var(--surf);border:1px solid var(--bdr);
+  border-radius:2px;color:var(--cream);font-family:var(--fdev);
+  font-size:14px;padding:10px 14px;outline:none;
+  transition:border-color .3s,box-shadow .3s;
+}
+.comment-inp:focus{border-color:var(--cr-mid);box-shadow:0 0 0 3px rgba(122,16,16,.14)}
+.comment-btn{
+  align-self:flex-end;
+  padding:10px 22px;background:var(--cr-dk);border:1px solid var(--cr);
+  color:var(--cream);font-family:var(--fdev);font-size:14px;
+  font-weight:600;cursor:pointer;border-radius:2px;
+  letter-spacing:.04em;transition:all .28s var(--ease);
+}
+.comment-btn:hover{background:var(--cr);box-shadow:0 6px 28px rgba(50,5,5,.5)}
+.comment-btn:disabled{opacity:.4;cursor:wait}
+
+/* ══════════════════════════════════════
+   READING MODAL (Post Detail)
+══════════════════════════════════════ */
+.rmoverlay{
+  position:fixed;inset:0;background:rgba(3,0,0,.92);
+  z-index:800;display:flex;align-items:flex-start;
+  justify-content:center;padding:40px 20px;
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  opacity:0;pointer-events:none;
+  transition:opacity .32s var(--ease);
+  overflow-y:auto;
+}
+.rmoverlay.open{opacity:1;pointer-events:all}
+.rmbox{
+  background:var(--surf);border:1px solid var(--bdr-hi);
+  border-radius:3px;max-width:740px;width:100%;
+  padding:48px 48px 40px;position:relative;
+  box-shadow:0 48px 140px rgba(78,10,10,.6);
+  transform:translateY(18px);transition:transform .35s var(--ease-out);
+  margin:auto;
+}
+.rmoverlay.open .rmbox{transform:translateY(0)}
+.rmclose{
+  position:sticky;top:0;float:right;margin-bottom:-40px;
+  background:var(--card);border:1px solid var(--bdr);
+  color:var(--muted);width:34px;height:34px;
+  cursor:pointer;font-size:15px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:2px;transition:all .28s var(--ease);z-index:2;
+}
+.rmclose:hover{border-color:var(--cr-mid);color:var(--cream);background:var(--cr-dk)}
+
+/* Post modal content */
+.m-badge{
+  font-family:var(--fd);font-size:9px;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--cr-brt);margin-bottom:14px;
+}
+.m-title{
+  font-family:var(--fdev);font-size:clamp(24px,3.8vw,38px);
+  font-weight:700;color:var(--cream);line-height:1.2;margin-bottom:7px;clear:both;
+}
+.m-author{
+  font-family:var(--fd);font-size:13px;font-style:italic;
+  color:var(--gold);margin-bottom:26px;
+}
+.m-div{width:40px;height:1px;background:var(--cr);margin-bottom:26px}
+.m-body{
+  font-family:var(--fdev);font-size:17px;
+  color:var(--cream-d);line-height:1.95;white-space:pre-wrap;
+}
+.m-body.poem{font-style:italic;line-height:2.15;font-size:18px}
+.m-media{margin-top:24px;border-top:1px solid var(--bdr);padding-top:20px}
+.m-media img{max-width:100%;border-radius:2px;border:1px solid var(--bdr)}
+.m-media audio,.m-media video{width:100%;margin-top:8px;border-radius:2px;accent-color:var(--cr)}
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+.toast{
+  position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--cr-dk);border:1px solid var(--cr-mid);
+  color:var(--cream);padding:12px 26px;
+  font-family:var(--fdev);font-size:14px;
+  border-radius:2px;z-index:9998;
+  transition:transform .38s var(--ease);
+  white-space:nowrap;max-width:calc(100vw - 40px);
+  box-shadow:0 6px 36px rgba(0,0,0,.55);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:var(--green);background:rgba(20,60,30,.92)}
+.toast.error{border-color:var(--cr-glo);background:rgba(78,10,10,.96)}
+
+/* ══════════════════════════════════════
+   FOOTER
+══════════════════════════════════════ */
+footer{
+  border-top:1px solid var(--bdr);padding:24px 32px;
+  text-align:center;position:relative;z-index:1;
+}
+.ft-ne{font-family:var(--fdev);font-size:16px;color:var(--cr-mid);margin-bottom:4px}
+.ft-en{font-size:11px;color:var(--muted)}
+
+/* ══════════════════════════════════════
+   MOBILE SIDEBAR DRAWER (for small screens)
+══════════════════════════════════════ */
+.mobile-filter-drawer{
+  position:fixed;inset:0;z-index:600;
+  background:rgba(3,0,0,.95);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s var(--ease);
+  overflow-y:auto;
+}
+.mobile-filter-drawer.open{opacity:1;pointer-events:all}
+.mfd-inner{
+  max-width:380px;background:var(--card);
+  border-right:1px solid var(--bdr-hi);
+  min-height:100vh;padding:80px 24px 40px;
+  transform:translateX(-100%);transition:transform .35s var(--ease-out);
+}
+.mobile-filter-drawer.open .mfd-inner{transform:translateX(0)}
+.mfd-close{
+  position:absolute;top:18px;left:18px;
+  background:var(--surf);border:1px solid var(--bdr);
+  color:var(--cream-d);width:38px;height:38px;
+  cursor:pointer;font-size:18px;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:3px;transition:all .25s;
+}
+.mfd-close:hover{border-color:var(--cr-mid);color:var(--cream)}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════ */
+@media(max-width:1100px){
+  .feed-layout{grid-template-columns:200px 1fr;gap:20px}
+  .sidebar-right{display:none}
+}
+@media(max-width:768px){
+  nav{padding:0 16px}
+  .nav-sort{display:none}
+  .nav-hamburger{display:flex;align-items:center;justify-content:center}
+  .feed-layout{grid-template-columns:1fr;padding:0 12px 60px}
+  .sidebar-left{display:none}
+  .ov-inner{padding:68px 18px 60px}
+  .rmbox{padding:36px 20px 28px}
+  .comment-inputs{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(4,1fr)}
+  .media-grid{grid-template-columns:1fr 1fr 1fr}
+}
+@media(max-width:480px){
+  .feed-layout{padding:0 10px 60px}
+  .pc{padding:18px 16px 14px}
+  .toast{white-space:normal;text-align:center;bottom:16px;font-size:13px}
+  .ov-close{top:12px;right:12px;width:38px;height:38px}
+  .rxn-btn{padding:7px 12px;font-size:13px}
+  .btn-write{padding:7px 12px;font-size:13px}
+  .btn-write-text{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════
+     AMBIENT BACKGROUND LAYER
+     Floating Devanagari chars + crimson glow behind the feed.
+     This transforms the original "hero" into ambient context.
+     ═══════════════════════════════════════════════════════════ -->
+<div class="ambient-bg">
+  <div class="ambient-glow"></div>
+  <div id="floats"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     GLOBAL NAV
+     Feed-first: Sort tabs in center, Write CTA in top-right.
+     ═══════════════════════════════════════════════════════════ -->
+<nav>
+  <a class="logo" href="#" onclick="clearAllFilters();return false">
+    <div class="logo-ne">कलम को घर</div>
+    <span class="logo-en">Kalam Ko Ghar</span>
+  </a>
+
+  <!-- Sort tabs (hidden on mobile) -->
+  <div class="nav-sort">
+    <button class="nav-sort-btn on" id="sort-trending" onclick="setSort('trending',this)">
+      🔥 सजेशन्स
+    </button>
+    <button class="nav-sort-btn" id="sort-new" onclick="setSort('new',this)">
+      ✨ नयाँ
+    </button>
+  </div>
+
+  <div class="nav-right">
+    <!-- Mobile filter toggle -->
+    <button class="nav-hamburger" onclick="openMobileFilters()" title="Filters">☰</button>
+    <!-- PRIMARY WRITE CTA -->
+    <button class="btn-write" onclick="openOverlay('ov-write')">
+      <span class="btn-write-icon">✍️</span>
+      <span class="btn-write-text">रचना लेख्नुहोस्</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN FEED PAGE (Feed-First layout)
+     ═══════════════════════════════════════════════════════════ -->
+<main id="feed-page">
+  <div class="feed-layout">
+
+    <!-- ─── LEFT SIDEBAR ─── -->
+    <aside class="sidebar-left">
+      <div class="sidebar-section">
+        <div class="sidebar-label">विधाहरू — Categories</div>
+        <div class="cat-filter-list" id="cat-filter-list">
+          <button class="cat-filter-btn on" data-f="all" onclick="setCatFilter('all',this)">
+            सबै <span class="cat-count" id="cnt-all">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="कविता" onclick="setCatFilter('कविता',this)">
+            🌸 कविता <span class="cat-count" id="cnt-कविता">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="कथा" onclick="setCatFilter('कथा',this)">
+            📖 कथा <span class="cat-count" id="cnt-कथा">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="लघुकथा" onclick="setCatFilter('लघुकथा',this)">
+            📜 लघुकथा <span class="cat-count" id="cnt-लघुकथा">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="निबन्ध" onclick="setCatFilter('निबन्ध',this)">
+            📝 निबन्ध <span class="cat-count" id="cnt-निबन्ध">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="गज़ल" onclick="setCatFilter('गज़ल',this)">
+            🎵 गज़ल <span class="cat-count" id="cnt-गज़ल">—</span>
+          </button>
+          <button class="cat-filter-btn" data-f="अन्य" onclick="setCatFilter('अन्य',this)">
+            ✦ अन्य <span class="cat-count" id="cnt-अन्य">—</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Trending Tags -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">ट्रेन्डिङ ट्यागहरू — Trending Tags</div>
+        <div id="trending-tags-list">
+          <div style="font-size:12px;color:var(--muted);font-style:italic">लोड हुँदैछ…</div>
+        </div>
+      </div>
+
+      <!-- Brand quote -->
+      <div class="brand-card">
+        <div class="brand-ne">जहाँ शब्दहरू सास लिन्छन्…</div>
+        <div class="brand-divider"></div>
+        <div class="brand-en">Where words breathe — every poem, story and feeling finds its home.</div>
+      </div>
+    </aside>
+
+    <!-- ─── CENTER FEED ─── -->
+    <section class="feed-center">
+      <!-- Search + active filter indicator -->
+      <div class="feed-header">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchQ"
+            placeholder="शीर्षक, लेखक वा ट्यागले खोज्नुहोस्… (Search)"
+            oninput="onSearch()"
+            autocomplete="off">
+          <button class="search-clear" id="search-clear-btn" onclick="clearSearch()">✕</button>
+        </div>
+        <div class="active-filter-bar" id="active-filter-bar"></div>
+      </div>
+
+      <!-- Feed loading state -->
+      <div class="feed-loading" id="feed-loading">
+        <div class="spinner"></div>
+        रचनाहरू लोड हुँदैछ…
+      </div>
+
+      <!-- Feed list -->
+      <div class="feed-list" id="feed-list" style="display:none"></div>
+
+      <!-- Infinite scroll sentinel -->
+      <div class="scroll-sentinel" id="scroll-sentinel">
+        <div class="scroll-sentinel-inner">
+          <span class="sentinel-spinner"></span>
+          थप रचनाहरू लोड हुँदैछ…
+        </div>
+      </div>
+
+      <!-- End of feed -->
+      <div class="feed-end" id="feed-end" style="display:none">
+        ✦ &nbsp; सबै रचनाहरू देखाइयो &nbsp; ✦
+      </div>
+    </section>
+
+    <!-- ─── RIGHT SIDEBAR ─── -->
+    <aside class="sidebar-right">
+      <div class="stat-card">
+        <div class="stat-card-title">समुदाय तथ्याङ्क — Stats</div>
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-item"><span class="stat-n" id="sn-total">—</span><span class="stat-l">रचनाहरू</span></div>
+          <div class="stat-item"><span class="stat-n" id="sn-poems">—</span><span class="stat-l">कविताहरू</span></div>
+          <div class="stat-item"><span class="stat-n" id="sn-stories">—</span><span class="stat-l">कथाहरू</span></div>
+          <div class="stat-item"><span class="stat-n" id="sn-rxn">—</span><span class="stat-l">प्रतिक्रिया</span></div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-card-title">Sort by — क्रमबद्ध गर्नुहोस्</div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="cat-filter-btn on" id="sort-r-trending" onclick="setSort('trending',this)">🔥 सजेशन्स (Trending)</button>
+          <button class="cat-filter-btn" id="sort-r-new" onclick="setSort('new',this)">✨ नयाँ (Latest)</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MOBILE FILTER DRAWER
+     ═══════════════════════════════════════════════════════════ -->
+<div class="mobile-filter-drawer" id="mobile-filter-drawer" onclick="closeMobileFilters(event)">
+  <div class="mfd-inner">
+    <button class="mfd-close" onclick="document.getElementById('mobile-filter-drawer').classList.remove('open')">✕</button>
+    <div class="sidebar-label" style="margin-top:0">विधाहरू — Categories</div>
+    <div class="cat-filter-list" id="mobile-cat-list" style="margin-bottom:24px">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="sidebar-label">Sort — क्रमबद्ध</div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <button class="cat-filter-btn on" onclick="setSort('trending',this);closeMobileFilters()">🔥 सजेशन्स</button>
+      <button class="cat-filter-btn" onclick="setSort('new',this);closeMobileFilters()">✨ नयाँ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     WRITE OVERLAY
+     ═══════════════════════════════════════════════════════════ -->
+<div class="overlay" id="ov-write">
+  <button class="ov-close" onclick="closeOverlay('ov-write')" title="बन्द गर्नुहोस्">✕</button>
+  <div class="ov-inner">
+    <p class="sh-eyebrow">Share your work with the world</p>
+    <h2 class="sh-title">रचना प्रकाशित गर्नुहोस्</h2>
+    <p class="sh-sub">आफ्नो शब्दहरू संसारसँग साझा गर्नुहोस्</p>
+
+    <!-- Category selection -->
+    <div class="fg">
+      <label>विधा छान्नुहोस् — Choose Category <span style="color:var(--cr-glo);font-size:10px">*</span></label>
+      <div class="cats" id="catBtns">
+        <button class="cat on" data-c="कविता"  onclick="pickCat(this)">कविता (Poem)</button>
+        <button class="cat"   data-c="कथा"    onclick="pickCat(this)">कथा (Story)</button>
+        <button class="cat"   data-c="लघुकथा" onclick="pickCat(this)">लघुकथा (Short Story)</button>
+        <button class="cat"   data-c="निबन्ध" onclick="pickCat(this)">निबन्ध (Essay)</button>
+        <button class="cat"   data-c="गज़ल"   onclick="pickCat(this)">गज़ल (Ghazal)</button>
+        <button class="cat"   data-c="अन्य"   onclick="pickCat(this)">अन्य (Other)</button>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <div class="fg">
+      <label>शीर्षक — Title <span style="color:var(--cr-glo);font-size:10px">*</span></label>
+      <input type="text" id="pTitle" placeholder="आफ्नो रचनाको शीर्षक…" maxlength="160" oninput="clearErr(this)">
+    </div>
+
+    <!-- Author -->
+    <div class="fg">
+      <label>लेखकको नाम — Author Name <span style="color:var(--cr-glo);font-size:10px">*</span></label>
+      <input type="text" id="pAuthor" placeholder="तपाईंको नाम वा उपनाम…" maxlength="80" oninput="clearErr(this)">
+    </div>
+
+    <!-- Content -->
+    <div class="fg">
+      <label>रचना — Content <span style="color:var(--cr-glo);font-size:10px">*</span></label>
+      <textarea id="pContent"
+        placeholder="यहाँ आफ्नो रचना लेख्नुहोस्…&#10;&#10;शब्दहरूमा आफूलाई पोख्नुहोस्।"
+        oninput="updateCounter();clearErr(this)"></textarea>
+      <div class="counter-row">
+        <div class="wc-text" id="wc-display">शब्द <span id="wc-words">0</span> &nbsp;·&nbsp; अक्षर <span id="wc-chars">0</span></div>
+      </div>
+    </div>
+
+    <!-- Tags (user-generated, pill UX) -->
+    <div class="fg">
+      <label>ट्याग — Tags
+        <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0">
+          (Enter वा comma थिच्नुहोस् — press Enter or comma to add)
+        </span>
+      </label>
+      <div class="tags-input-wrap">
+        <input type="text" id="pTagInput"
+          placeholder="#प्रेम  #प्रकृति  #जीवन  #नेपाल…"
+          maxlength="50"
+          onkeydown="handleTagKey(event)">
+        <div class="tags-preview" id="tags-preview"></div>
+      </div>
+    </div>
+
+    <!-- Media upload -->
+    <div class="fg">
+      <label>मिडिया — Attach Media
+        <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0">(Optional — uploads to cloud storage)</span>
+      </label>
+      <div class="media-grid">
+        <label class="mup" id="mup-image">
+          <input type="file" accept="image/*" id="fi-image" onchange="onMedia('image',this)">
+          <span class="mup-icon">🖼️</span>
+          <span class="mup-lne">तस्बिर</span>
+          <span class="mup-hint">Photo / Image</span>
+        </label>
+        <label class="mup" id="mup-video">
+          <input type="file" accept="video/*" id="fi-video" onchange="onMedia('video',this)">
+          <span class="mup-icon">🎬</span>
+          <span class="mup-lne">भिडियो</span>
+          <span class="mup-hint">Video</span>
+        </label>
+        <label class="mup" id="mup-audio">
+          <input type="file" accept="audio/*" id="fi-audio" onchange="onMedia('audio',this)">
+          <span class="mup-icon">🎵</span>
+          <span class="mup-lne">अडियो</span>
+          <span class="mup-hint">Audio / Voice</span>
+        </label>
+      </div>
+      <!-- Upload progress -->
+      <div class="upload-progress" id="upload-progress">
+        <div class="upload-progress-bar" id="upload-progress-bar"></div>
+      </div>
+      <div class="media-prevs" id="mediaPrevs"></div>
+      <div class="upload-status" id="upload-status"></div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitPost()">
+      रचना प्रकाशित गर्नुहोस् — Publish Now
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     READING MODAL (Post Detail)
+     ═══════════════════════════════════════════════════════════ -->
+<div class="rmoverlay" id="rmoverlay" onclick="closeRMcheck(event)">
+  <div class="rmbox" id="rmbox">
+    <button class="rmclose" onclick="closeRM()">✕</button>
+    <div id="minner"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TOAST NOTIFICATION
+     ═══════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast"></div>
+
+<footer>
+  <div class="ft-ne">कलम को घर</div>
+  <div class="ft-en">Kalam Ko Ghar · A Home for Nepali Literature · Made with ❤ in Nepal</div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT — Production App Logic
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// ██████  SUPABASE CONFIGURATION
+// ████████████████████████████████████████████████████████████████
+//
+//  STEP 1: Replace these two values with your own from:
+//    https://supabase.com/dashboard → Your Project → Settings → API
+//
+//  SUPABASE_URL  = Project URL (e.g. https://xyzxyz.supabase.co)
+//  SUPABASE_KEY  = anon / public key (safe for frontend use)
+//
+// ════════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL';   // ← REPLACE
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';       // ← REPLACE
+
+// Initialize the Supabase client (CDN global: window.supabase)
+const { createClient } = window.supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ════════════════════════════════════════════════════════════════
+// ██████  APP STATE
+// ████████████████████████████████████████████████████████████████
+const PAGE_SIZE    = 12;     // posts per batch (infinite scroll)
+let curPage        = 0;      // current page offset
+let curSort        = 'trending'; // 'trending' | 'new'
+let curCatFilter   = 'all';  // category filter
+let curTagFilter   = null;   // tag filter (string | null)
+let curSearch      = '';     // search query
+let isLoading      = false;  // guard against concurrent fetches
+let allLoaded      = false;  // no more posts to fetch
+let cachedCounts   = {};     // category counts cache
+
+// Write form state
+let selCat      = 'कविता';
+let mFiles      = { image: null, video: null, audio: null };
+let mObjectURLs = { image: null, video: null, audio: null };
+let pendingTags = [];        // tags as array before submission
+
+// Per-device reaction memory (localStorage — which device reacted to what)
+const LS_RXNS   = 'kkgReactionsV4';
+let myReactions = {};        // { postId: 'love'|'wah'|'sad' }
+
+// Anonymous device ID for reaction deduplication
+const DEVICE_ID = (()=>{
+  let id = localStorage.getItem('kkg_device');
+  if (!id) { id = 'dev_' + Math.random().toString(36).slice(2,11); localStorage.setItem('kkg_device', id); }
+  return id;
+})();
+
+// ════════════════════════════════════════════════════════════════
+// ██████  SEED DATA (fallback when Supabase not yet configured)
+// ████████████████████████████████████████████████████════════════
+const SEED = [
+  { id: 1, type: 'कविता', title: 'हिमालको काखमा', author: 'रमेश पौडेल',
+    content: `हिमालको काखमा हुर्किए म,\nजहाँ बादल भुइँमा छरिन्छन्,\nजहाँ हावाले गीत गाउँछे,\nर ढुंगाहरू पनि बोल्छन्।\n\nआफ्नो माटोको गन्ध लिएर,\nफूलहरूसँग खेल्दै हिँड्छु,\nपहाडका ती काँडाहरूमा पनि,\nमैले आफ्नो घर भेटाएँ।`,
+    tags: ['हिमाल', 'मातृभूमि', 'प्रकृति'], reactions: { love: 47, wah: 12, sad: 3 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*10).toISOString() },
+  { id: 2, type: 'कथा', title: 'अन्तिम पत्र', author: 'सीमा श्रेष्ठ',
+    content: `वर्षौंपछि उसले त्यो बाकस खोल्यो। धूलोले भरिएको काठको बाकस, जुन उसकी आमाले मृत्युपूर्व "सही समयमा खोल्नु" भनेर छोडेकी थिइन्।\n\nपहेँलो परेका कागजमा लेखिएको थियो — "मेरो छोरा, जब तिमी यो पढ्छौ, म छैन। तर मेरो माया सधैं छ।"`,
+    tags: ['आमा', 'माया', 'स्मृति'], reactions: { love: 89, wah: 22, sad: 61 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*8).toISOString() },
+  { id: 3, type: 'लघुकथा', title: 'साँझको तारा', author: 'बिक्रम तामाङ',
+    content: `"बाबा, त्यो तारा किन एक्लो छ?" छोरीले आकाशतिर हेरेर सोधी।\n\n"त्यो एक्लो छैन," बाबाले भने, "त्यसका साथी बादलले छोपेका छन् — अहिले देखिँदैनन् मात्र।"\n\nछोरीले सोची। अनि मुस्कुराई।\n\n"त्यसो भए म पनि एक्लो छैनँ।"`,
+    tags: ['परिवार', 'आशा', 'बाल मन'], reactions: { love: 134, wah: 88, sad: 7 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*6).toISOString() },
+  { id: 4, type: 'गज़ल', title: 'तिम्रो याद', author: 'प्रिया गुरुङ',
+    content: `तिम्रो याद आउँछ झरीसँगै, भिज्दछु एक्लै म,\nतिम्रो नाम जपेर रातभर, रुन्छु एक्लै म।\n\nबाटोमा भेटें कसैलाई, तिम्रो झल्को पाएँ,\nफर्केर हेर्दा खाली छ ठाउँ, खोज्छु एक्लै म।`,
+    tags: ['प्रेम', 'विरह', 'याद'], reactions: { love: 201, wah: 45, sad: 98 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*4).toISOString() },
+  { id: 5, type: 'निबन्ध', title: 'नेपाली भाषाको सौन्दर्य', author: 'डा. कमला आचार्य',
+    content: `नेपाली भाषा केवल सञ्चारको माध्यम होइन — यो एउटा जीवन्त संस्कृति हो, एउटा बहती नदी हो जसमा हजारौं वर्षका अनुभव र भावनाहरू बगिरहेका छन्।\n\n"माया" भन्ने शब्द। अंग्रेजीमा "love" र "affection" छन्, तर "माया"ले त्यो गहिराइ समेट्दैन जुन नेपालीमा छ।`,
+    tags: ['भाषा', 'संस्कृति', 'नेपाल'], reactions: { love: 76, wah: 33, sad: 4 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*3).toISOString() },
+  { id: 6, type: 'कविता', title: 'काठमाडौंको वर्षा', author: 'अनिल मानन्धर',
+    content: `काठमाडौंको वर्षामा,\nछाता नभएका मान्छेहरू,\nढोकाधोकामा आश्रय खोज्छन् —\nजस्तो म तिम्रो मनमा।`,
+    tags: ['काठमाडौं', 'वर्षा', 'सहर'], reactions: { love: 158, wah: 62, sad: 11 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*2).toISOString() },
+  { id: 7, type: 'लघुकथा', title: 'एउटा रुपैयाँ', author: 'मनिषा थापा',
+    content: `बूढो भिखारीले एउटा रुपैयाँ माग्यो।\n\nकेटाले जेब खानतलासी गर्यो — खाली।\n\n"माफ गर्नुस्," केटाले भन्यो।\n\nभिखारीले मुस्कुरायो — "कोई कुरा छैन, छोरा।"`,
+    tags: ['जीवन', 'दर्शन', 'लघु'], reactions: { love: 93, wah: 57, sad: 8 }, comments: [], mt: null, md: null, created_at: new Date(Date.now()-86400000*1).toISOString() },
+  { id: 8, type: 'कविता', title: 'आमाको हात', author: 'सुजन राई',
+    content: `आमाको हात —\nखुर्सानी पिस्दा रातो भएको,\nआँसु पुछ्दा नरम भएको,\nआशीर्वाद दिँदा पवित्र भएको।`,
+    tags: ['आमा', 'माया', 'स्मृति', 'कविता'], reactions: { love: 287, wah: 143, sad: 49 }, comments: [], mt: null, md: null, created_at: new Date().toISOString() }
+];
+
+// Track whether Supabase is configured (to fall back to seed data gracefully)
+let USE_SUPABASE = false;
+
+// ════════════════════════════════════════════════════════════════
+// ██████  SUPABASE CONNECTION CHECK
+// ████████████████████████████████████████████████████████████████
+async function checkSupabaseConnection() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_PROJECT_URL') {
+    console.info('[KKG] Supabase not configured — using seed data for local preview.');
+    USE_SUPABASE = false;
+    return false;
+  }
+  try {
+    const { error } = await db.from('posts').select('id').limit(1);
+    if (error) throw error;
+    USE_SUPABASE = true;
+    console.info('[KKG] Supabase connected ✓');
+    return true;
+  } catch (e) {
+    console.warn('[KKG] Supabase connection failed — falling back to seed data.', e.message);
+    USE_SUPABASE = false;
+    return false;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  DATA FETCHING — POSTS
+//  Supports: category filter, tag filter, search, sort, pagination
+// ════════════════════════════════════════════════════════════════
+async function fetchPosts(reset = false) {
+  if (isLoading || (allLoaded && !reset)) return;
+  isLoading = true;
+
+  if (reset) {
+    curPage = 0;
+    allLoaded = false;
+    document.getElementById('feed-list').innerHTML = '';
+    document.getElementById('feed-end').style.display = 'none';
+    document.getElementById('feed-loading').style.display = 'block';
+    document.getElementById('feed-list').style.display = 'none';
+  }
+
+  // Show sentinel loading on subsequent pages
+  if (curPage > 0) {
+    document.getElementById('scroll-sentinel').classList.add('loading');
+  }
+
+  try {
+    let posts;
+
+    if (USE_SUPABASE) {
+      posts = await fetchFromSupabase();
+    } else {
+      posts = fetchFromSeed();
+    }
+
+    // Append posts to feed
+    const list = document.getElementById('feed-list');
+    list.style.display = 'flex';
+    document.getElementById('feed-loading').style.display = 'none';
+
+    if (posts.length === 0 && curPage === 0) {
+      list.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">📜</div>
+          <div class="empty-title">कुनै साहित्य भेटिएन…</div>
+          <div class="empty-sub">No literature found — try a different filter</div>
+        </div>`;
+    } else if (posts.length < PAGE_SIZE) {
+      // Fewer results than page size = we've reached the end
+      posts.forEach(p => list.appendChild(buildPostCard(p)));
+      allLoaded = true;
+      document.getElementById('scroll-sentinel').style.display = 'none';
+      if (curPage > 0 || posts.length > 0) {
+        document.getElementById('feed-end').style.display = 'block';
+      }
+    } else {
+      posts.forEach(p => list.appendChild(buildPostCard(p)));
+      curPage++;
+    }
+
+  } catch (err) {
+    console.error('[KKG] fetchPosts error:', err);
+    toast('⚠️ रचनाहरू लोड गर्न सकिएन — ' + err.message, 'error');
+    document.getElementById('feed-loading').style.display = 'none';
+    document.getElementById('feed-list').style.display = 'flex';
+  }
+
+  document.getElementById('scroll-sentinel').classList.remove('loading');
+  isLoading = false;
+}
+
+// ── Fetch from Supabase with all filter/sort/search logic ──
+async function fetchFromSupabase() {
+  let query = db.from('posts').select('*');
+
+  // Category filter
+  if (curCatFilter !== 'all') {
+    query = query.eq('type', curCatFilter);
+  }
+
+  // Tag filter (array contains)
+  if (curTagFilter) {
+    query = query.contains('tags', [curTagFilter]);
+  }
+
+  // Text search (title OR author OR tags)
+  if (curSearch) {
+    // Using ilike on title and author — adjust to full-text if needed
+    query = query.or(
+      `title.ilike.%${curSearch}%,author.ilike.%${curSearch}%`
+    );
+  }
+
+  // Sorting
+  if (curSort === 'trending') {
+    // Trending = computed reaction_total, descending
+    // Requires a computed column or Postgres function.
+    // Fallback: sort by created_at descending if view not set up yet.
+    query = query.order('reaction_total', { ascending: false, nullsFirst: false });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  // Pagination
+  const from = curPage * PAGE_SIZE;
+  const to   = from + PAGE_SIZE - 1;
+  query = query.range(from, to);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  // Merge local reaction memory
+  return (data || []).map(p => ({
+    ...p,
+    reactions: p.reactions || { love: 0, wah: 0, sad: 0 },
+    comments: p.comments || [],
+    myReaction: myReactions[p.id] || null,
+  }));
+}
+
+// ── Fetch from seed data (offline / unconfigured mode) ──
+function fetchFromSeed() {
+  let data = [...SEED];
+
+  if (curCatFilter !== 'all') {
+    data = data.filter(p => p.type === curCatFilter);
+  }
+  if (curTagFilter) {
+    data = data.filter(p => (p.tags || []).includes(curTagFilter));
+  }
+  if (curSearch) {
+    const q = curSearch.toLowerCase();
+    data = data.filter(p =>
+      p.title.toLowerCase().includes(q) ||
+      p.author.toLowerCase().includes(q) ||
+      (p.tags || []).some(t => t.toLowerCase().includes(q))
+    );
+  }
+  if (curSort === 'trending') {
+    data.sort((a, b) => {
+      const ra = (a.reactions?.love||0)+(a.reactions?.wah||0)+(a.reactions?.sad||0);
+      const rb = (b.reactions?.love||0)+(b.reactions?.wah||0)+(b.reactions?.sad||0);
+      return rb - ra;
+    });
+  } else {
+    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  // Simulate pagination
+  const from = curPage * PAGE_SIZE;
+  const chunk = data.slice(from, from + PAGE_SIZE);
+  if (chunk.length === PAGE_SIZE) curPage++;
+  return chunk;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  BUILD POST CARD ELEMENT
+// ════════════════════════════════════════════════════════════════
+function buildPostCard(p) {
+  const el = document.createElement('article');
+  el.className = 'pc';
+  el.dataset.postId = p.id;
+
+  const r = p.reactions || { love: 0, wah: 0, sad: 0 };
+  const myR = myReactions[p.id];
+  const commentCount = (p.comments || []).length;
+  const isVerse = p.type === 'कविता' || p.type === 'गज़ल';
+  const previewText = (p.content || '').replace(/\n/g, ' ');
+
+  el.innerHTML = `
+    <div class="pc-top">
+      <span class="pc-badge">${esc(p.type)}</span>
+      <span class="pc-date-meta">${relTime(new Date(p.created_at).getTime())}</span>
+    </div>
+    <div class="pc-title" onclick="openPost('${p.id}')">${esc(p.title)}</div>
+    <div class="pc-author">— ${esc(p.author)}</div>
+    ${p.md ? `<div class="pc-media-badge">${p.mt === 'image' ? '🖼️' : p.mt === 'video' ? '🎬' : '🎵'} <span style="font-size:11px;color:var(--muted)">${p.mt}</span></div>` : ''}
+    <div class="pc-preview${isVerse ? ' verse' : ''}" onclick="openPost('${p.id}')">${esc(previewText)}</div>
+    ${(p.tags || []).length ? `
+      <div class="pc-tags">
+        ${p.tags.map(t => `<button class="pc-tag${curTagFilter === t ? ' on' : ''}" onclick="setTagFilter('${esc(t)}',event)">#${esc(t)}</button>`).join('')}
+      </div>` : ''}
+    <div class="pc-foot">
+      <button class="pc-rxn-chip${myR === 'love' ? ' my-rxn' : ''}" onclick="quickReact('${p.id}','love',event)">
+        <span class="rxn-emoji">❤️</span>
+        <span class="rxn-count" id="qrc-love-${p.id}">${r.love || 0}</span>
+      </button>
+      <button class="pc-rxn-chip${myR === 'wah' ? ' my-rxn' : ''}" onclick="quickReact('${p.id}','wah',event)">
+        <span class="rxn-emoji">👏</span>
+        <span class="rxn-count" id="qrc-wah-${p.id}">${r.wah || 0}</span>
+      </button>
+      <button class="pc-rxn-chip${myR === 'sad' ? ' my-rxn' : ''}" onclick="quickReact('${p.id}','sad',event)">
+        <span class="rxn-emoji">😢</span>
+        <span class="rxn-count" id="qrc-sad-${p.id}">${r.sad || 0}</span>
+      </button>
+      ${commentCount ? `<span class="pc-rxn-chip" onclick="openPost('${p.id}')"><span>💬</span><span>${commentCount}</span></span>` : ''}
+      <span class="pc-read-more" onclick="openPost('${p.id}')">पढ्नुहोस् →</span>
+    </div>
+  `;
+
+  return el;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  FILTER / SORT CONTROLS
+// ════════════════════════════════════════════════════════════════
+function setCatFilter(cat, btn) {
+  curCatFilter = cat;
+  curTagFilter = null;
+  // Update sidebar active state
+  document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll(`[data-f="${cat}"]`).forEach(b => b.classList.add('on'));
+  updateActiveFilterBar();
+  fetchPosts(true);
+  updateSidebarCounts();
+}
+
+function setTagFilter(tag, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  if (curTagFilter === tag) {
+    // Toggle off
+    curTagFilter = null;
+  } else {
+    curTagFilter = tag;
+  }
+  updateActiveFilterBar();
+  fetchPosts(true);
+}
+
+function setSort(sort, btn) {
+  curSort = sort;
+  // Update all sort buttons
+  document.querySelectorAll('[id^="sort-"]').forEach(b => b.classList.remove('on'));
+  document.getElementById('sort-trending')?.classList.toggle('on', sort === 'trending');
+  document.getElementById('sort-new')?.classList.toggle('on', sort === 'new');
+  document.getElementById('sort-r-trending')?.classList.toggle('on', sort === 'trending');
+  document.getElementById('sort-r-new')?.classList.toggle('on', sort === 'new');
+  fetchPosts(true);
+}
+
+function onSearch() {
+  const val = document.getElementById('searchQ').value.trim();
+  curSearch = val;
+  document.getElementById('search-clear-btn').style.display = val ? 'block' : 'none';
+  // Debounce
+  clearTimeout(window._searchTimer);
+  window._searchTimer = setTimeout(() => { fetchPosts(true); }, 320);
+}
+
+function clearSearch() {
+  document.getElementById('searchQ').value = '';
+  curSearch = '';
+  document.getElementById('search-clear-btn').style.display = 'none';
+  fetchPosts(true);
+}
+
+function clearAllFilters() {
+  curCatFilter = 'all';
+  curTagFilter = null;
+  curSearch = '';
+  document.getElementById('searchQ').value = '';
+  document.getElementById('search-clear-btn').style.display = 'none';
+  document.querySelectorAll('.cat-filter-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('[data-f="all"]').forEach(b => b.classList.add('on'));
+  updateActiveFilterBar();
+  fetchPosts(true);
+}
+
+function updateActiveFilterBar() {
+  const bar = document.getElementById('active-filter-bar');
+  const pills = [];
+  if (curCatFilter !== 'all') {
+    pills.push(`<span class="active-filter-pill">${esc(curCatFilter)} <button class="active-filter-clear" onclick="setCatFilter('all',null)">✕</button></span>`);
+  }
+  if (curTagFilter) {
+    pills.push(`<span class="active-filter-pill">#${esc(curTagFilter)} <button class="active-filter-clear" onclick="setTagFilter(null,null)">✕</button></span>`);
+  }
+  if (pills.length) {
+    bar.innerHTML = `<span style="font-size:12px;color:var(--muted)">फिल्टर:</span> ${pills.join('')}`;
+  } else {
+    bar.innerHTML = '';
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  STATS & TRENDING TAGS
+// ════════════════════════════════════════════════════════════════
+async function loadStats() {
+  try {
+    let allPosts;
+    if (USE_SUPABASE) {
+      const { data, error } = await db.from('posts').select('type,reactions,tags');
+      if (error) throw error;
+      allPosts = data || [];
+    } else {
+      allPosts = SEED;
+    }
+
+    const total   = allPosts.length;
+    const poems   = allPosts.filter(p => p.type === 'कविता').length;
+    const stories = allPosts.filter(p => p.type === 'कथा' || p.type === 'लघुकथा').length;
+    const totalRxn = allPosts.reduce((a, p) => {
+      const r = p.reactions || {};
+      return a + (r.love || 0) + (r.wah || 0) + (r.sad || 0);
+    }, 0);
+
+    document.getElementById('sn-total').textContent  = total.toLocaleString();
+    document.getElementById('sn-poems').textContent  = poems.toLocaleString();
+    document.getElementById('sn-stories').textContent = stories.toLocaleString();
+    document.getElementById('sn-rxn').textContent    = totalRxn.toLocaleString();
+
+    // Category counts for sidebar
+    const types = ['all', 'कविता', 'कथा', 'लघुकथा', 'निबन्ध', 'गज़ल', 'अन्य'];
+    types.forEach(t => {
+      const el = document.getElementById('cnt-' + t);
+      if (el) {
+        const c = t === 'all' ? total : allPosts.filter(p => p.type === t).length;
+        el.textContent = c;
+      }
+    });
+
+    // Trending tags
+    const tagFreq = {};
+    allPosts.forEach(p => {
+      (p.tags || []).forEach(tag => {
+        if (tag) tagFreq[tag] = (tagFreq[tag] || 0) + 1;
+      });
+    });
+    const sortedTags = Object.entries(tagFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+
+    const tl = document.getElementById('trending-tags-list');
+    if (sortedTags.length === 0) {
+      tl.innerHTML = '<div style="font-size:12px;color:var(--muted);font-style:italic">अझै ट्याग छैन…</div>';
+    } else {
+      tl.innerHTML = sortedTags.map(([tag, count]) => `
+        <div class="trending-tag" onclick="setTagFilter('${esc(tag)}',event)">
+          <span class="t-name">#${esc(tag)}</span>
+          <span class="t-count">${count}</span>
+        </div>`).join('');
+    }
+
+    // Tag cloud in sidebar (also render top tags as chip-style)
+    renderTagCloud(sortedTags.map(([t]) => t));
+
+  } catch (err) {
+    console.error('[KKG] loadStats error:', err);
+  }
+}
+
+function renderTagCloud(tags) {
+  // Tag cloud is rendered as sidebar trending list — already done above
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  REACTIONS
+//  Atomic Supabase RPC for global reaction counts
+// ════════════════════════════════════════════════════════════════
+async function quickReact(postId, type, event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+
+  // Optimistic UI: toggle immediately
+  const prev = myReactions[postId];
+  const chip = event?.currentTarget || document.querySelector(`[onclick*="quickReact('${postId}','${type}'"]`);
+  const countEl = document.getElementById(`qrc-${type}-${postId}`);
+
+  if (!countEl) return;
+  let count = parseInt(countEl.textContent) || 0;
+
+  if (prev === type) {
+    // Un-react
+    count = Math.max(0, count - 1);
+    countEl.textContent = count;
+    delete myReactions[postId];
+    chip?.classList.remove('my-rxn');
+  } else {
+    // Remove old reaction chip highlight if switching
+    if (prev) {
+      const oldChip = document.querySelector(`[id^="qrc-${prev}-${postId}"]`)?.closest('.pc-rxn-chip');
+      if (oldChip) {
+        oldChip.classList.remove('my-rxn');
+        const oldCount = document.getElementById(`qrc-${prev}-${postId}`);
+        if (oldCount) oldCount.textContent = Math.max(0, parseInt(oldCount.textContent) - 1);
+      }
+    }
+    // Add new
+    count = count + 1;
+    countEl.textContent = count;
+    myReactions[postId] = type;
+    chip?.classList.add('my-rxn');
+  }
+  saveReactions();
+
+  if (USE_SUPABASE) {
+    try {
+      await persistReaction(postId, type, prev);
+    } catch (err) {
+      console.error('[KKG] reaction persist failed:', err);
+      // Silently fail — optimistic update stays
+    }
+  }
+}
+
+async function persistReaction(postId, type, prev) {
+  // Upsert into reactions table
+  if (prev === type) {
+    // Delete reaction
+    await db.from('reactions').delete().eq('post_id', postId).eq('device_id', DEVICE_ID);
+  } else {
+    // Upsert (on conflict update)
+    await db.from('reactions').upsert({
+      post_id: postId,
+      device_id: DEVICE_ID,
+      type: type,
+      created_at: new Date().toISOString()
+    }, { onConflict: 'post_id,device_id' });
+  }
+  // Also update the denormalized reactions JSONB on posts table for fast reads
+  await updatePostReactionCounts(postId);
+}
+
+async function updatePostReactionCounts(postId) {
+  const { data } = await db
+    .from('reactions')
+    .select('type')
+    .eq('post_id', postId);
+  if (!data) return;
+  const counts = { love: 0, wah: 0, sad: 0 };
+  data.forEach(r => { if (r.type in counts) counts[r.type]++; });
+  await db.from('posts').update({
+    reactions: counts,
+    reaction_total: counts.love + counts.wah + counts.sad
+  }).eq('id', postId);
+}
+
+function saveReactions() {
+  try { localStorage.setItem(LS_RXNS, JSON.stringify(myReactions)); } catch (e) {}
+}
+
+function loadReactions() {
+  try {
+    const s = localStorage.getItem(LS_RXNS);
+    myReactions = s ? JSON.parse(s) : {};
+  } catch (e) { myReactions = {}; }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  READING MODAL — POST DETAIL
+// ════════════════════════════════════════════════════════════════
+async function openPost(postId) {
+  // Show modal immediately with loading state
+  document.getElementById('minner').innerHTML = `
+    <div style="text-align:center;padding:60px 20px">
+      <div class="spinner"></div>
+      <div style="font-family:var(--fd);font-size:12px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-top:16px">रचना लोड हुँदैछ…</div>
+    </div>`;
+  document.getElementById('rmoverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  let p;
+  if (USE_SUPABASE) {
+    const { data, error } = await db
+      .from('posts')
+      .select('*, comments(*)')
+      .eq('id', postId)
+      .single();
+    if (error || !data) {
+      toast('⚠️ रचना लोड गर्न सकिएन।', 'error');
+      closeRM();
+      return;
+    }
+    p = data;
+    // Normalize comments
+    p.comments = (p.comments || []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  } else {
+    p = SEED.find(x => String(x.id) === String(postId));
+    if (!p) { toast('⚠️ रचना भेटिएन।', 'error'); closeRM(); return; }
+  }
+
+  const isVerse = p.type === 'कविता' || p.type === 'गज़ल';
+  const r = p.reactions || { love: 0, wah: 0, sad: 0 };
+  const myR = myReactions[postId];
+  const comments = p.comments || [];
+
+  document.getElementById('minner').innerHTML = `
+    <div class="m-badge">${esc(p.type)}</div>
+    <div class="m-title">${esc(p.title)}</div>
+    <div class="m-author">— ${esc(p.author)} &nbsp;·&nbsp; <span style="color:var(--muted)">${relTime(new Date(p.created_at).getTime())}</span></div>
+    <div class="m-div"></div>
+    <div class="m-body${isVerse ? ' poem' : ''}">${esc(p.content)}</div>
+
+    ${p.md ? `<div class="m-media">
+      ${p.mt === 'image' ? `<img src="${esc(p.md)}" alt="media" loading="lazy">` : ''}
+      ${p.mt === 'video' ? `<video controls src="${esc(p.md)}"></video>` : ''}
+      ${p.mt === 'audio' ? `<audio controls src="${esc(p.md)}"></audio>` : ''}
+    </div>` : ''}
+
+    ${(p.tags || []).length ? `
+      <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:6px">
+        ${p.tags.map(t => `<button class="pc-tag" onclick="setTagFilter('${esc(t)}',event);closeRM()">#${esc(t)}</button>`).join('')}
+      </div>` : ''}
+
+    <!-- REACTIONS -->
+    <div class="reaction-section">
+      <div class="reaction-label">प्रतिक्रिया — React</div>
+      <div class="reaction-bar" id="rxn-bar-${postId}">
+        <button class="rxn-btn${myR === 'love' ? ' active-love' : ''}" id="rxn-love-${postId}" onclick="reactModal('${postId}','love')">
+          <span class="rxn-emoji">❤️</span>
+          <span class="rxn-label">मनपर्यो</span>
+          <span class="rxn-count" id="rxn-love-count-${postId}">${r.love || 0}</span>
+          ${myR === 'love' ? '<span class="rxn-mine-dot"></span>' : ''}
+        </button>
+        <button class="rxn-btn${myR === 'wah' ? ' active-wah' : ''}" id="rxn-wah-${postId}" onclick="reactModal('${postId}','wah')">
+          <span class="rxn-emoji">👏</span>
+          <span class="rxn-label">वाह</span>
+          <span class="rxn-count" id="rxn-wah-count-${postId}">${r.wah || 0}</span>
+          ${myR === 'wah' ? '<span class="rxn-mine-dot"></span>' : ''}
+        </button>
+        <button class="rxn-btn${myR === 'sad' ? ' active-sad' : ''}" id="rxn-sad-${postId}" onclick="reactModal('${postId}','sad')">
+          <span class="rxn-emoji">😢</span>
+          <span class="rxn-label">भावुक</span>
+          <span class="rxn-count" id="rxn-sad-count-${postId}">${r.sad || 0}</span>
+          ${myR === 'sad' ? '<span class="rxn-mine-dot"></span>' : ''}
+        </button>
+      </div>
+    </div>
+
+    <!-- COMMENTS -->
+    <div class="comments-section">
+      <div class="comments-label">
+        <span>टिप्पणीहरू — Comments</span>
+        <span class="comments-count" id="cmt-count-${postId}">${comments.length}</span>
+      </div>
+      <div class="comment-list" id="cmt-list-${postId}">
+        ${renderComments(comments)}
+      </div>
+      <div class="comment-form">
+        <div class="comment-inputs">
+          <input class="comment-inp" type="text" id="cmt-name-${postId}" placeholder="तपाईंको नाम… (Your name)" maxlength="60">
+          <input class="comment-inp" type="text" id="cmt-txt-${postId}"
+            placeholder="टिप्पणी लेख्नुहोस्… (Write a comment)"
+            maxlength="500"
+            onkeydown="if(event.key==='Enter')addComment('${postId}')">
+        </div>
+        <button class="comment-btn" id="cmt-btn-${postId}" onclick="addComment('${postId}')">
+          टिप्पणी गर्नुहोस् — Comment
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderComments(comments) {
+  if (!comments || !comments.length) {
+    return '<div class="no-comments">अझै कुनै टिप्पणी छैन — No comments yet</div>';
+  }
+  return comments.map(c => `
+    <div class="comment-item">
+      <div class="comment-meta">
+        <span class="comment-author">${esc(c.author_name || c.name)}</span>
+        <span class="comment-time">${relTime(new Date(c.created_at || c.ts).getTime())}</span>
+      </div>
+      <div class="comment-text">${esc(c.comment_text || c.text)}</div>
+    </div>`).join('');
+}
+
+// ── Reaction inside modal ──
+async function reactModal(postId, type) {
+  const prev = myReactions[postId];
+  const types = ['love', 'wah', 'sad'];
+  const labels = { love: '❤️ मनपर्यो', wah: '👏 वाह', sad: '😢 भावुक' };
+  const activeClass = { love: 'active-love', wah: 'active-wah', sad: 'active-sad' };
+
+  // Update counts locally
+  types.forEach(t => {
+    const countEl = document.getElementById(`rxn-${t}-count-${postId}`);
+    if (!countEl) return;
+    let c = parseInt(countEl.textContent) || 0;
+    if (t === prev && prev === type) c = Math.max(0, c - 1); // toggle off
+    else if (t === prev) c = Math.max(0, c - 1);             // remove old
+    else if (t === type && prev !== type) c = c + 1;          // add new
+    countEl.textContent = c;
+  });
+
+  if (prev === type) {
+    delete myReactions[postId];
+  } else {
+    myReactions[postId] = type;
+  }
+  saveReactions();
+
+  // Re-render reaction buttons
+  types.forEach(t => {
+    const btn = document.getElementById(`rxn-${t}-${postId}`);
+    if (!btn) return;
+    const myR = myReactions[postId];
+    btn.className = `rxn-btn${myR === t ? ' ' + activeClass[t] : ''}`;
+    btn.innerHTML = `
+      <span class="rxn-emoji">${labels[t].split(' ')[0]}</span>
+      <span class="rxn-label">${labels[t].split(' ').slice(1).join(' ')}</span>
+      <span class="rxn-count" id="rxn-${t}-count-${postId}">${document.getElementById(`rxn-${t}-count-${postId}`)?.textContent || 0}</span>
+      ${myR === t ? '<span class="rxn-mine-dot"></span>' : ''}`;
+    btn.onclick = () => reactModal(postId, t);
+  });
+
+  // Also update feed card quick-react chips
+  ['love', 'wah', 'sad'].forEach(t => {
+    const qEl = document.getElementById(`qrc-${t}-${postId}`);
+    if (qEl) qEl.textContent = document.getElementById(`rxn-${t}-count-${postId}`)?.textContent || 0;
+  });
+
+  if (USE_SUPABASE) {
+    try { await persistReaction(postId, type, prev); } catch (e) {}
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  COMMENTS — Add new comment
+// ════════════════════════════════════════════════════════════════
+async function addComment(postId) {
+  const nameEl = document.getElementById('cmt-name-' + postId);
+  const txtEl  = document.getElementById('cmt-txt-'  + postId);
+  const btn    = document.getElementById('cmt-btn-'  + postId);
+  const name   = nameEl.value.trim();
+  const text   = txtEl.value.trim();
+
+  if (!name) { nameEl.classList.add('field-error'); nameEl.focus(); return; }
+  if (!text) { txtEl.classList.add('field-error');  txtEl.focus();  return; }
+  nameEl.classList.remove('field-error');
+  txtEl.classList.remove('field-error');
+
+  btn.disabled = true;
+  btn.textContent = 'पठाउँदैछ…';
+
+  const newComment = {
+    author_name: name,
+    comment_text: text,
+    created_at: new Date().toISOString(),
+    post_id: postId
+  };
+
+  if (USE_SUPABASE) {
+    try {
+      const { data, error } = await db.from('comments').insert(newComment).select().single();
+      if (error) throw error;
+      // Append to UI
+      const list = document.getElementById('cmt-list-' + postId);
+      const noEl = list.querySelector('.no-comments');
+      if (noEl) noEl.remove();
+      const div = document.createElement('div');
+      div.className = 'comment-item';
+      div.style.animationDelay = '0s';
+      div.innerHTML = `
+        <div class="comment-meta">
+          <span class="comment-author">${esc(name)}</span>
+          <span class="comment-time">अहिले भर्खर — Just now</span>
+        </div>
+        <div class="comment-text">${esc(text)}</div>`;
+      list.prepend(div);
+      // Increment count
+      const countEl = document.getElementById('cmt-count-' + postId);
+      if (countEl) countEl.textContent = parseInt(countEl.textContent || 0) + 1;
+      txtEl.value = '';
+    } catch (err) {
+      toast('⚠️ टिप्पणी पठाउन सकिएन — ' + err.message, 'error');
+    }
+  } else {
+    // Offline mode — append locally
+    const list = document.getElementById('cmt-list-' + postId);
+    const noEl = list.querySelector('.no-comments');
+    if (noEl) noEl.remove();
+    const div = document.createElement('div');
+    div.className = 'comment-item';
+    div.innerHTML = `
+      <div class="comment-meta">
+        <span class="comment-author">${esc(name)}</span>
+        <span class="comment-time">अहिले भर्खर — Just now</span>
+      </div>
+      <div class="comment-text">${esc(text)}</div>`;
+    list.prepend(div);
+    const countEl = document.getElementById('cmt-count-' + postId);
+    if (countEl) countEl.textContent = parseInt(countEl.textContent || 0) + 1;
+    txtEl.value = '';
+    toast('💬 टिप्पणी थपियो! (Supabase लागू नभएकाले डेटा सुरक्षित हुँदैन)', '');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'टिप्पणी गर्नुहोस् — Comment';
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  WRITE FORM — Tag Management
+// ════════════════════════════════════════════════════════════════
+function handleTagKey(event) {
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    addTag(document.getElementById('pTagInput').value.replace(',', '').trim());
+  }
+}
+
+function addTag(raw) {
+  if (!raw) return;
+  // Clean tag: remove #, lowercase (optional), limit length
+  const tag = raw.replace(/^#/, '').trim().slice(0, 30);
+  if (!tag) return;
+  if (pendingTags.includes(tag)) { toast('ट्याग पहिल्यै थपिएको छ।', ''); return; }
+  if (pendingTags.length >= 8) { toast('अधिकतम ८ ट्याग मात्र — Max 8 tags.', 'error'); return; }
+  pendingTags.push(tag);
+  document.getElementById('pTagInput').value = '';
+  renderTagPills();
+}
+
+function removeTag(tag) {
+  pendingTags = pendingTags.filter(t => t !== tag);
+  renderTagPills();
+}
+
+function renderTagPills() {
+  document.getElementById('tags-preview').innerHTML = pendingTags.map(t =>
+    `<span class="tag-pill">#${esc(t)}<button class="tag-pill-rm" onclick="removeTag('${esc(t)}')">✕</button></span>`
+  ).join('');
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  WRITE FORM — MEDIA UPLOAD
+//  Files > 5MB are skipped with a clear message.
+//  When Supabase is configured, uploads go to Supabase Storage.
+// ════════════════════════════════════════════════════════════════
+function onMedia(type, inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  // Revoke previous
+  if (mObjectURLs[type]) URL.revokeObjectURL(mObjectURLs[type]);
+  mFiles[type] = f;
+  mObjectURLs[type] = URL.createObjectURL(f);
+  document.getElementById('mup-' + type).classList.add('has-file');
+  renderPreviews();
+  setUploadStatus(`${type} তयार छ: ${f.name.slice(0, 28)} (${(f.size / 1024).toFixed(0)}KB)`, '');
+}
+
+function removeMedia(type) {
+  if (mObjectURLs[type]) { URL.revokeObjectURL(mObjectURLs[type]); mObjectURLs[type] = null; }
+  mFiles[type] = null;
+  document.getElementById('fi-' + type).value = '';
+  document.getElementById('mup-' + type).classList.remove('has-file');
+  renderPreviews();
+  setUploadStatus('', '');
+}
+
+function renderPreviews() {
+  const el = document.getElementById('mediaPrevs');
+  el.innerHTML = '';
+  Object.entries(mFiles).forEach(([t, f]) => {
+    if (!f) return;
+    const d = document.createElement('div');
+    d.className = 'mpv';
+    if (t === 'image') {
+      d.innerHTML = `<img src="${mObjectURLs[t]}" alt="preview"><button class="mpv-rm" onclick="removeMedia('${t}')" title="हटाउनुहोस्">✕</button>`;
+    } else {
+      d.innerHTML = `<div class="mpv-info"><span style="font-size:22px">${t === 'video' ? '🎬' : '🎵'}</span><span style="font-size:9px;word-break:break-all">${f.name.slice(0, 14)}</span></div><button class="mpv-rm" onclick="removeMedia('${t}')" title="हटाउनुहोस्">✕</button>`;
+    }
+    el.appendChild(d);
+  });
+}
+
+function setUploadStatus(msg, type) {
+  const el = document.getElementById('upload-status');
+  el.textContent = msg;
+  el.className = 'upload-status' + (type ? ' ' + type : '');
+}
+
+// Upload file to Supabase Storage and return public URL
+async function uploadMediaFile(file, type) {
+  if (!USE_SUPABASE || !file) return null;
+  const ext = file.name.split('.').pop();
+  const path = `media/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const progressEl = document.getElementById('upload-progress');
+  const barEl      = document.getElementById('upload-progress-bar');
+
+  progressEl.style.display = 'block';
+  barEl.style.width = '10%';
+
+  const { data, error } = await db.storage
+    .from('kkg-media')    // ← bucket name: create this in Supabase Storage
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+
+  barEl.style.width = '100%';
+  setTimeout(() => { progressEl.style.display = 'none'; barEl.style.width = '0%'; }, 600);
+
+  if (error) { console.error('[KKG] Storage upload error:', error); throw error; }
+
+  const { data: { publicUrl } } = db.storage.from('kkg-media').getPublicUrl(path);
+  return publicUrl;
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  WRITE FORM — SUBMIT POST
+// ════════════════════════════════════════════════════════════════
+async function submitPost() {
+  const titleEl   = document.getElementById('pTitle');
+  const authorEl  = document.getElementById('pAuthor');
+  const contentEl = document.getElementById('pContent');
+  const title     = titleEl.value.trim();
+  const author    = authorEl.value.trim();
+  const content   = contentEl.value.trim();
+
+  let valid = true;
+  if (!title)   { showFieldErr('pTitle',   'शीर्षक आवश्यक छ — Title is required'); valid = false; }
+  if (!author)  { showFieldErr('pAuthor',  'लेखकको नाम आवश्यक छ — Author name required'); valid = false; }
+  if (!content) { showFieldErr('pContent', 'रचना खाली छ — Content cannot be empty'); valid = false; }
+  if (!valid) return;
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'प्रकाशित हुँदैछ…';
+
+  // Flush any un-Enter'd tag from input
+  const rawTagInput = document.getElementById('pTagInput').value.trim();
+  if (rawTagInput) addTag(rawTagInput.replace(',', '').trim());
+
+  let mediaType = null, mediaUrl = null;
+  try {
+    // Upload media if any
+    const mediaEntry = Object.entries(mFiles).find(([, f]) => f);
+    if (mediaEntry) {
+      const [mtype, mfile] = mediaEntry;
+      setUploadStatus('मिडिया अपलोड हुँदैछ…', '');
+      if (USE_SUPABASE) {
+        mediaUrl  = await uploadMediaFile(mfile, mtype);
+        mediaType = mtype;
+        setUploadStatus('✓ मिडिया अपलोड भयो', 'ok');
+      } else {
+        // Offline: use object URL (non-persistent but functional for preview)
+        if (mfile.size <= 3 * 1024 * 1024) {
+          mediaUrl = await fileToBase64(mfile);
+          mediaType = mtype;
+        } else {
+          setUploadStatus('⚠️ Supabase नभएकाले ठूलो फाइल सुरक्षित हुँदैन।', 'err');
+        }
+      }
+    }
+
+    const newPost = {
+      type:       selCat,
+      title,
+      author,
+      content,
+      tags:       pendingTags,
+      mt:         mediaType,
+      md:         mediaUrl,
+      reactions:  { love: 0, wah: 0, sad: 0 },
+      reaction_total: 0,
+      created_at: new Date().toISOString(),
+    };
+
+    if (USE_SUPABASE) {
+      const { error } = await db.from('posts').insert(newPost);
+      if (error) throw error;
+    } else {
+      // Local seed prepend for offline preview
+      SEED.unshift({ ...newPost, id: Date.now(), comments: [] });
+    }
+
+    // Reset form
+    ['pTitle', 'pAuthor', 'pContent'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('pTagInput').value = '';
+    pendingTags = [];
+    renderTagPills();
+    updateCounter();
+    document.getElementById('mediaPrevs').innerHTML = '';
+    setUploadStatus('', '');
+    Object.keys(mObjectURLs).forEach(k => { if (mObjectURLs[k]) { URL.revokeObjectURL(mObjectURLs[k]); mObjectURLs[k] = null; } });
+    mFiles = { image: null, video: null, audio: null };
+    ['image', 'video', 'audio'].forEach(t => {
+      document.getElementById('mup-' + t).classList.remove('has-file');
+      document.getElementById('fi-' + t).value = '';
+    });
+    document.querySelectorAll('.cat').forEach(b => b.classList.remove('on'));
+    document.querySelector('.cat').classList.add('on');
+    selCat = 'कविता';
+
+    toast('🎉 रचना सफलतापूर्वक प्रकाशित भयो!', 'success');
+
+    setTimeout(() => {
+      closeOverlay('ov-write');
+      // Refresh feed to show new post
+      curSort = 'new';
+      document.getElementById('sort-new')?.classList.add('on');
+      document.getElementById('sort-trending')?.classList.remove('on');
+      fetchPosts(true);
+      loadStats();
+    }, 1200);
+
+  } catch (err) {
+    console.error('[KKG] submitPost error:', err);
+    toast('⚠️ प्रकाशन असफल भयो — ' + err.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'रचना प्रकाशित गर्नुहोस् — Publish Now';
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = () => rej(new Error('File read failed'));
+    r.readAsDataURL(file);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  INFINITE SCROLL — IntersectionObserver
+// ════════════════════════════════════════════════════════════════
+function initInfiniteScroll() {
+  const sentinel = document.getElementById('scroll-sentinel');
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isLoading && !allLoaded) {
+      fetchPosts(false);
+    }
+  }, { threshold: 0.1, rootMargin: '200px' });
+  observer.observe(sentinel);
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  OVERLAY SYSTEM
+// ════════════════════════════════════════════════════════════════
+function openOverlay(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById(id).scrollTop = 0;
+}
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('open');
+  if (!document.getElementById('rmoverlay').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+function closeRMcheck(e) {
+  if (e.target === document.getElementById('rmoverlay')) closeRM();
+}
+function closeRM() {
+  document.getElementById('rmoverlay').classList.remove('open');
+  if (!document.getElementById('ov-write').classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+// Mobile filter drawer
+function openMobileFilters() {
+  // Populate mobile cat list
+  const ml = document.getElementById('mobile-cat-list');
+  const cats = [
+    { f: 'all', label: 'सबै' },
+    { f: 'कविता', label: '🌸 कविता' },
+    { f: 'कथा', label: '📖 कथा' },
+    { f: 'लघुकथा', label: '📜 लघुकथा' },
+    { f: 'निबन्ध', label: '📝 निबन्ध' },
+    { f: 'गज़ल', label: '🎵 गज़ल' },
+    { f: 'अन्य', label: '✦ अन्य' },
+  ];
+  ml.innerHTML = cats.map(c => `
+    <button class="cat-filter-btn${curCatFilter === c.f ? ' on' : ''}" data-f="${c.f}"
+      onclick="setCatFilter('${c.f}',this);closeMobileFilters()">
+      ${c.label}
+    </button>`).join('');
+  document.getElementById('mobile-filter-drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileFilters(event) {
+  if (event && event.target !== document.getElementById('mobile-filter-drawer')) return;
+  document.getElementById('mobile-filter-drawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ESC key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('rmoverlay').classList.contains('open')) { closeRM(); return; }
+    if (document.getElementById('ov-write').classList.contains('open')) { closeOverlay('ov-write'); return; }
+    if (document.getElementById('mobile-filter-drawer').classList.contains('open')) {
+      document.getElementById('mobile-filter-drawer').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// ██████  FORM HELPERS
+// ════════════════════════════════════════════════════════════════
+function pickCat(btn) {
+  document.querySelectorAll('.cat').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  selCat = btn.dataset.c;
+}
+
+function updateCounter() {
+  const txt = document.getElementById('pContent').value;
+  const words = txt.trim() ? txt.trim().split(/\s+/).length : 0;
+  document.getElementById('wc-words').textContent = words;
+  document.getElementById('wc-chars').textContent = txt.length;
+}
+
+function clearErr(el) {
+  el.classList.remove('field-error');
+  const em = el.parentElement.querySelector('.field-error-msg');
+  if (em) em.remove();
+}
+
+function showFieldErr(id, msg) {
+  const el = document.getElementById(id);
+  el.classList.add('field-error');
+  if (!el.parentElement.querySelector('.field-error-msg')) {
+    const em = document.createElement('div');
+    em.className = 'field-error-msg';
+    em.textContent = msg;
+    el.parentElement.appendChild(em);
+  }
+  el.focus();
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  SIDEBAR COUNTS UPDATE
+// ════════════════════════════════════════════════════════════════
+async function updateSidebarCounts() {
+  // Called after filter changes — re-run loadStats for fresh counts
+  loadStats();
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  AMBIENT FLOATING DEVANAGARI
+//  Now ambient (behind feed), not blocking landing screen.
+// ════════════════════════════════════════════════════════════════
+function initFloats() {
+  const chars = 'कखगघचछजझतथदधनपफबभमयरलवशषसहक्षज्ञ'.split('');
+  const c = document.getElementById('floats');
+  for (let i = 0; i < 20; i++) {
+    const el = document.createElement('span');
+    el.className = 'fc';
+    el.textContent = chars[Math.floor(Math.random() * chars.length)];
+    const sz = 24 + Math.random() * 80;
+    const r0 = (Math.random() - .5) * 32;
+    el.style.cssText = `font-size:${sz}px;top:${Math.random() * 92}%;left:${Math.random() * 94}%;--dur:${5 + Math.random() * 9}s;--del:${-Math.random() * 10}s;--r0:${r0}deg;--r1:${r0 + (Math.random() - .5) * 14}deg;`;
+    c.appendChild(el);
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  UTILITIES
+// ════════════════════════════════════════════════════════════════
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function relTime(ts) {
+  const diff = Date.now() - ts;
+  const min  = Math.floor(diff / 60000);
+  const hr   = Math.floor(diff / 3600000);
+  const day  = Math.floor(diff / 86400000);
+  if (min < 1)  return 'अहिले भर्खर — Just now';
+  if (min < 60) return `${min}m अगाडि`;
+  if (hr < 24)  return `${hr}h अगाडि`;
+  if (day < 30) return `${day}d अगाडि`;
+  return new Date(ts).toLocaleDateString('ne-NP', { month: 'short', day: 'numeric' });
+}
+
+let toastTimer = null;
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  void t.offsetWidth;
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3600);
+}
+
+// ════════════════════════════════════════════════════════════════
+// ██████  APP INITIALIZATION
+// ════════════════════════════════════════════════════════════════
+async function init() {
+  loadReactions();
+  initFloats();
+  await checkSupabaseConnection();
+  await fetchPosts(true);
+  await loadStats();
+  initInfiniteScroll();
+}
+
+init();
+</script>
+</body>
+</html>
